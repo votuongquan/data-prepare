@@ -73,7 +73,7 @@ def main():
         print(newmodel)
         # dump_output = newmodel(dump_input)
         # print(dump_output.size())
-        checkpoint = torch.load('./hrnet_w48_coco_wholebody_384x288-6e061c6a_20200922.pth')
+        checkpoint = torch.load('/kaggle/input/hrnet-w48-coco/hrnet_w48_coco_wholebody_384x288-6e061c6a_20200922.pth')
         # newmodel.load_state_dict(checkpoint['state_dict'])
 
 
@@ -145,7 +145,7 @@ def main():
                     print("Ignoring empty camera frame.")
                     # If loading a video, use 'break' instead of 'continue'.
                     break
-                # img = cv2.resize(img, (256,256))
+                img = cv2.resize(img, (288, 288))
                 frame_height, frame_width = img.shape[:2]
                 img = cv2.flip(img, flipCode=1)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

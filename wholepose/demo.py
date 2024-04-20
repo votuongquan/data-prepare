@@ -113,8 +113,6 @@ def main():
         # names = names[start_step*step:(start_step+1)*step]
         paths = paths[2400:]
         names = names[2400:]
-        paths = paths[::-1]
-        names = names[::-1]
 
         for i, path in enumerate(paths):
             # if i > 1:

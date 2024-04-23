@@ -94,7 +94,7 @@ def main():
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
         ])
 
-        input_path = '/kaggle/input/vsl-rgb-videos/Updated_videos'
+        input_path = '/kaggle/input/inference-40-videos/inference'
         paths = []
         names = []
         for root, _, fnames in natsorted(os.walk(input_path)):
@@ -111,8 +111,8 @@ def main():
         start_step = 6
         # paths = paths[start_step*step:(start_step+1)*step]
         # names = names[start_step*step:(start_step+1)*step]
-        paths = paths[2400:]
-        names = names[2400:]
+        paths = paths[:]
+        names = names[:]
 
         for i, path in enumerate(paths):
             # if i > 1:

@@ -1,0 +1,17 @@
+data_args:
+  normalization: True
+  random_choose: True
+  window_size: 120  # 100 for AUTSL, 120 for others
+
+# model
+model_args:
+  num_class: 100   # 100 for WLASL100, 300 for WLASL300, 1000 for WLASL1000, 2000 for WLASL2000, 226 for AUTSL, 500 for SLR500, 100 for VSL
+  num_point: 27
+  num_person: 1
+  groups: 16
+  block_size: 41
+  graph_args:
+    labeling_mode: 'spatial'
+  inner_dim: 64
+  depth: 4
+  drop_layers: 2

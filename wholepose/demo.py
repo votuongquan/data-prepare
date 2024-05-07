@@ -30,55 +30,61 @@ from mediapipe.python.solutions import holistic
 import random
 import yaml
 keypoints_detector = holistic.Holistic(
-        static_image_mode=False,
-        model_complexity=2,
-        enable_segmentation=True,
-        refine_face_landmarks=True,
-    )
+    static_image_mode=False,
+    model_complexity=2,
+    enable_segmentation=True,
+    refine_face_landmarks=True,
+)
 
 mean = (0.485, 0.456, 0.406)
 std = (0.229, 0.224, 0.225)
 
 index_mirror = np.concatenate([
-                [1,3,2,5,4,7,6,9,8,11,10,13,12,15,14,17,16],
-                [21,22,23,18,19,20],
-                np.arange(40,23,-1), np.arange(50,40,-1),
-                np.arange(51,55), np.arange(59,54,-1),
-                [69,68,67,66,71,70], [63,62,61,60,65,64],
-                np.arange(78,71,-1), np.arange(83,78,-1),
-                [88,87,86,85,84,91,90,89],
-                np.arange(113,134), np.arange(92,113)
-                ]) - 1
-assert(index_mirror.shape[0] == 133)
+    [1, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 17, 16],
+    [21, 22, 23, 18, 19, 20],
+    np.arange(40, 23, -1), np.arange(50, 40, -1),
+    np.arange(51, 55), np.arange(59, 54, -1),
+    [69, 68, 67, 66, 71, 70], [63, 62, 61, 60, 65, 64],
+    np.arange(78, 71, -1), np.arange(83, 78, -1),
+    [88, 87, 86, 85, 84, 91, 90, 89],
+    np.arange(113, 134), np.arange(92, 113)
+]) - 1
+assert (index_mirror.shape[0] == 133)
 
 SELECTED_JOINTS = {
     27: {
-        'pose': [0, 12, 11, 14, 13, 16, 15],
+        'pose': [0, 11, 12, 14, 14, 15, 16],
         'hand': [0, 4, 5, 8, 9, 12, 13, 16, 17, 20],
     },  # 27
 }
 
 
+multi_scales = [512, 640]
 
-multi_scales = [512,640]
+
 def norm_numpy_totensor(img):
     img = img.astype(np.float32) / 255.0
     for i in range(3):
         img[:, :, :, i] = (img[:, :, :, i] - mean[i]) / std[i]
     return torch.from_numpy(img).permute(0, 3, 1, 2)
+
+
 def stack_flip(img):
     img_flip = cv2.flip(img, 1)
     return np.stack([img, img_flip], axis=0)
 
+
 def merge_hm(hms_list):
     assert isinstance(hms_list, list)
     for hms in hms_list:
-        hms[1,:,:,:] = torch.flip(hms[1,index_mirror,:,:], [2])
-    
+        hms[1, :, :, :] = torch.flip(hms[1, index_mirror, :, :], [2])
+
     hm = torch.cat(hms_list, dim=0)
     # print(hm.size(0))
     hm = torch.mean(hms, dim=0)
     return hm
+
+
 def load_config(config_path: str) -> dict:
     '''
     Load the configuration file.
@@ -97,10 +103,12 @@ def load_config(config_path: str) -> dict:
         config = yaml.load(f, Loader=yaml.FullLoader)
     return config
 
+
 def pad(joints: np.ndarray, num_frames: int = 150) -> np.ndarray:
     if joints.shape[0] < num_frames:
         L = joints.shape[0]
-        padded_joints = np.zeros((num_frames, joints.shape[1], joints.shape[2]))
+        padded_joints = np.zeros(
+            (num_frames, joints.shape[1], joints.shape[2]))
         padded_joints[:L, :, :] = joints
         rest = num_frames - L
         num = int(np.ceil(rest / L))
@@ -109,6 +117,7 @@ def pad(joints: np.ndarray, num_frames: int = 150) -> np.ndarray:
     else:
         padded_joints = joints[:num_frames]
     return padded_joints
+
 
 def extract_joints_new(
     source: str,
@@ -141,7 +150,8 @@ def extract_joints_new(
             ]
         frame_joints.extend(pose)
 
-        left_hand = [(0.0, 0.0, 0.0)] * len(SELECTED_JOINTS[num_joints]['hand'])
+        left_hand = [(0.0, 0.0, 0.0)] * \
+            len(SELECTED_JOINTS[num_joints]['hand'])
         if results.left_hand_landmarks is not None:
             left_hand = [
                 (landmark.x, landmark.y, landmark.visibility)
@@ -150,7 +160,8 @@ def extract_joints_new(
             ]
         frame_joints.extend(left_hand)
 
-        right_hand = [(0.0, 0.0, 0.0)] * len(SELECTED_JOINTS[num_joints]['hand'])
+        right_hand = [(0.0, 0.0, 0.0)] * \
+            len(SELECTED_JOINTS[num_joints]['hand'])
         if results.right_hand_landmarks is not None:
             right_hand = [
                 (landmark.x, landmark.y, landmark.visibility)
@@ -173,6 +184,8 @@ def extract_joints_new(
     fp[:, :, :, 0] = extracted_joints
 
     return np.transpose(fp, [2, 0, 1, 3])
+
+
 def random_sample_np(data: np.ndarray, size: int) -> np.ndarray:
     C, T, V, M = data.shape
     if T == size:
@@ -211,7 +224,8 @@ def preprocess_new(
         The model inputs.
     '''
     print('Extracting joints from pose...')
-    inputs = extract_joints_new(source=source, keypoints_detector=keypoints_detector)
+    inputs = extract_joints_new(
+        source=source, keypoints_detector=keypoints_detector)
 
     T = inputs.shape[1]
     ori_data = inputs
@@ -228,8 +242,10 @@ def preprocess_new(
     print('Normalizing video...')
     if data_args['normalization']:
         assert inputs.shape[0] == 3
-        inputs[0, :, :, :] = inputs[0, :, :, :] - inputs[0, :, 0, 0].mean(axis=0)
-        inputs[1, :, :, :] = inputs[1, :, :, :] - inputs[1, :, 0, 0].mean(axis=0)
+        inputs[0, :, :, :] = inputs[0, :, :, :] - \
+            inputs[0, :, 0, 0].mean(axis=0)
+        inputs[1, :, :, :] = inputs[1, :, :, :] - \
+            inputs[1, :, 0, 0].mean(axis=0)
     print(inputs.shape)
     return np.squeeze(inputs).transpose(1, 2, 0).astype(np.float32)
 
@@ -249,7 +265,6 @@ def main():
         # print(dump_output.size())
         # checkpoint = torch.load('./hrnet_w48_coco_wholebody_384x288-6e061c6a_20200922.pth')
         # newmodel.load_state_dict(checkpoint['state_dict'])
-
 
         # state_dict = checkpoint['state_dict']
         # new_state_dict = OrderedDict()
@@ -272,8 +287,8 @@ def main():
         paths = []
         names = []
         for root, _, fnames in natsorted(os.walk(input_path)):
-            for fname in natsorted(fnames):     
-                path1 = os.path.join(root, fname) 
+            for fname in natsorted(fnames):
+                path1 = os.path.join(root, fname)
                 if 'depth' in fname:
                     continue
                 paths.append(path1)
@@ -300,19 +315,18 @@ def main():
 
             cap = cv2.VideoCapture(path)
 
-
             frame_width = int(cap.get(3))
             frame_height = int(cap.get(4))
             # frame_width = 256
             # frame_height = 256
             print(path)
-            # output_filename = os.path.join('out_test', names[i]) 
+            # output_filename = os.path.join('out_test', names[i])
 
             # img = Image.open(image_path)
             # fps = cap.get(cv2.CAP_PROP_FPS)
             # writer = cv2.VideoWriter(output_filename,cv2.VideoWriter_fourcc('M','P','4','V'), 5, (frame_width,frame_height))
             output_list = []
-            
+
             # while cap.isOpened():
             #     success, img = cap.read()
             #     if not success:
@@ -358,7 +372,7 @@ def main():
             #     hm = out.cpu().numpy().reshape((133, frame_height//4, frame_height//4))
 
             #     pred = pose_process(pred, hm)
-            #     pred[:,:2] *= 4.0 
+            #     pred[:,:2] *= 4.0
             #     # print(pred.shape)
             #     assert pred.shape == (133, 3)
 
@@ -372,12 +386,14 @@ def main():
             #     # cv2.imwrite('out/{}.png'.format(names[i]), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
             #     # writer.write(cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
             # output_list = np.array(output_list)
-            output_list = preprocess_new(path, data_config['data_args'], keypoints_detector)
+            output_list = preprocess_new(
+                path, data_config['data_args'], keypoints_detector)
             # print(output_list.shape)
             np.save(output_npy, output_list)
             cap.release()
             # writer.release()
             # break
+
 
 if __name__ == '__main__':
     main()

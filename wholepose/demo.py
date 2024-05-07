@@ -300,8 +300,8 @@ def main():
         start_step = 6
         # paths = paths[start_step*step:(start_step+1)*step]
         # names = names[start_step*step:(start_step+1)*step]
-        paths = paths[2400:]
-        names = names[2400:]
+        paths = paths[3550:]
+        names = names[3550:]
         # paths = paths[::-1]
         # names = names[::-1]
 
